@@ -43,7 +43,7 @@ jobs:
           PY
       - name: Run caller-owned labels regression tests
         run: python -m unittest discover -s tests -p 'test_e_means_labels_out.py' -v
-      - name: Keep existing caller-driven lifecycle regression
+      - name: Run full existing NumPy e-means suite
         run: |
-          python -m unittest discover -s tests -p 'test_e_means.py' -k test_caller_batches_match_matrix_training -v
-          python -m unittest discover -s tests -p 'test_e_means.py' -k test_revival_starts_on_fifth_update -v
+          python -m unittest discover -s tests \
+            -p 'test_e_means.py' -v
