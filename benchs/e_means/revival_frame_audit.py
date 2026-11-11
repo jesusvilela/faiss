@@ -90,6 +90,8 @@ def witness_split(centroids, witness, radius, epsilon=float(EPS)):
     out[1] = (c + delta).astype(np.float32)
     if not np.isfinite(out).all():
         raise ValueError("split is not representable in FP32")
+    if np.array_equal(out[0], out[1]):
+        raise ValueError("revival abstained: FP32 operands collapsed")
     return out
 
 
@@ -193,6 +195,14 @@ class FrameTests(unittest.TestCase):
             farthest_witness(np.array([[np.nan, 0., 0.]], dtype=np.float32), [0], c)
         with self.assertRaises(ValueError):
             witness_split(np.vstack([c, c]), np.array([np.nan, 0., 0.]), 1.0)
+
+    def test_fp32_split_collapse_abstains(self):
+        # At 1e6, FP32 ULP=0.0625: epsilon * radius is far smaller.
+        c = np.array([[1e6, 0., 0.], [0., 0., 0.]], dtype=np.float32)
+        w = np.array([1e6 + .125, 0., 0.], dtype=np.float32)
+        self.assertGreater(float(np.spacing(c[0, 0])), 1e-2)
+        with self.assertRaisesRegex(ValueError, "FP32 operands collapsed"):
+            witness_split(c, w, .125)
 
     def test_actual_faiss_parity_if_installed(self):
         c = np.array([[2., 3., 5.], [11., -4., 6.]], dtype=np.float32)
