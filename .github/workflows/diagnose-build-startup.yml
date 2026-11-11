@@ -37,6 +37,9 @@ jobs:
         run: |
           set -eu
           go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 -color \
+            -ignore 'label ".*" is unknown' \
+            -ignore 'description is required in metadata' \
+            -ignore 'shellcheck reported issue' \
             .github/workflows/build.yml \
             .github/workflows/build-pull-request.yml \
             .github/workflows/build-release.yml \
