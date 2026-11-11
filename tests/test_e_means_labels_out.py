@@ -111,6 +111,19 @@ class TestCallerOwnedLabels(unittest.TestCase):
         _, expected = faiss.knn(x[:3], initial, 1)
         np.testing.assert_array_equal(out, expected.ravel())
 
+    def test_empty_chunk_preserves_caller_owned_label_view(self):
+        x, initial = _sample()
+        model = _model(0.)
+        model.begin(len(x), initial)
+        first = np.empty(3, dtype=np.int64)
+        model.accumulate(x[:3], labels_out=first)
+        empty = np.empty(0, dtype=np.int64)
+        stats = model.accumulate(x[:0], labels_out=empty)
+        self.assertEqual(stats["n"], 3)
+        self.assertIsNone(stats["counts"])
+        self.assertEqual(stats["labels"].shape, (0,))
+        self.assertIs(stats["labels"].base, empty)
+
     def test_capture_enabled_prefers_supplied_buffer_on_final_epoch(self):
         x = np.array([[0.], [2.], [10.], [12.]], dtype=np.float32)
         model = NumpyEmeans(1, 2, nepochs=1, batch_size=4,
