@@ -1,5 +1,3 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
-#
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
@@ -139,6 +137,25 @@ class TestCallerOwnedLabels(unittest.TestCase):
         model.update(stats)
         model.end_epoch()
         np.testing.assert_array_equal(model.finalize(), [[1.], [11.]])
+
+    def test_spherical_numpy_labels_use_inner_product_assignments(self):
+        x = np.array([[2., .1], [1., .5], [.1, 2.],
+                      [-1., .5]], dtype=np.float32)
+        initial = np.array([[1., 0.], [0., 1.]], dtype=np.float32)
+        model = NumpyEmeans(2, 2, nepochs=1, batch_size=4, alpha0=.5,
+                            spherical=True, unused_threshold=0.,
+                            capture_assignments=False)
+        model.begin(len(x), initial)
+        out = np.empty(len(x), dtype=np.int64)
+        _, expected = faiss.knn(
+            x, model.current_centroids(), 1,
+            metric=faiss.METRIC_INNER_PRODUCT)
+        stats = model.accumulate(x, labels_out=out)
+        np.testing.assert_array_equal(out, expected.ravel())
+        self.assertTrue(np.shares_memory(stats["labels"], out))
+        model.update(stats)
+        model.end_epoch()
+        self.assertEqual(model.finalize().shape, (2, 2))
 
     def test_rejects_invalid_buffers_without_poisoning_model(self):
         x = np.array([[0., 0.], [1., 0.],
