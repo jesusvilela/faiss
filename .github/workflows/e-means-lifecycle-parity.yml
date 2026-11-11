@@ -1,0 +1,54 @@
+name: E-means NumPy lifecycle witness parity
+
+on:
+  push:
+    branches:
+      - research/e-means-lifecycle-parity
+    paths:
+      - "benchs/e_means/revival_lifecycle_*.py"
+      - "benchs/e_means/REVIVAL_LIFECYCLE_*.md"
+      - ".github/workflows/e-means-lifecycle-parity.yml"
+  pull_request:
+    paths:
+      - "benchs/e_means/revival_lifecycle_*.py"
+      - "benchs/e_means/REVIVAL_LIFECYCLE_*.md"
+      - ".github/workflows/e-means-lifecycle-parity.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  actual-numpy-lifecycle:
+    name: Actual NumPy assignment and unchanged revival
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install compiled FAISS CPU and NumPy
+        run: python -m pip install numpy==2.3.5 faiss-cpu==1.15.1
+      - name: Copy current fork e-means Python source into compiled package
+        run: |
+          python - <<'PY'
+          import shutil
+          from pathlib import Path
+          import faiss
+          installed = Path(faiss.__file__).resolve().parent / "contrib" / "e_means"
+          shutil.copytree("contrib/e_means", installed, dirs_exist_ok=True)
+          print("Checked-out e-means:", installed)
+          PY
+      - name: Re-run inherited streaming witness tests
+        run: python benchs/e_means/revival_stream_test.py
+      - name: Verify exact trajectory against ordinary NumpyEmeans
+        run: python benchs/e_means/revival_lifecycle_test.py
+      - name: Preserve full per-step evidence
+        run: python benchs/e_means/revival_lifecycle_observer.py > stage7-lifecycle-evidence.jsonl
+      - name: Upload bounded diagnostics
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage7-e-means-numpy-lifecycle
+          path: stage7-lifecycle-evidence.jsonl
+          retention-days: 30
