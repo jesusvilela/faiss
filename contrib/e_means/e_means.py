@@ -355,23 +355,44 @@ class NumpyEmeans(_EmeansBase):
             else None
         )
 
-    def accumulate(self, x):
+    def accumulate(self, x, *, labels_out=None):
         """Accumulate rows against one fixed centroid snapshot.
 
         Complete statistics contain FP32 sums/counts, an FP64 objective and
         the supplied row count. Supply exactly the recipe's logical batch
         size before update. Partial calls return sums/counts as None.
         Complete totals borrow workspace; copy them before the next call
-        if they must be retained. Final-pass labels, when enabled, are owned
-        by the caller and describe only these supplied rows.
+        if they must be retained.
+
+        Optionally write this call's assignments into caller-owned
+        `labels_out`: a writable, contiguous int64 array of length len(x).
+        The returned stats also borrow its labels. Each call describes only
+        the supplied rows, even when it is part of a larger logical batch.
+        No extra nearest-centroid search is performed. Omitting labels_out
+        preserves the default last-pass capture policy.
         """
         self._require_running()
         try:
+            source = x
             x = np.ascontiguousarray(x, dtype="float32")
         except BaseException:
             self._failed = True
             raise
-        return self._accumulate(x)
+        if labels_out is not None:
+            if (
+                not isinstance(labels_out, np.ndarray)
+                or labels_out.dtype != np.dtype("int64")
+                or labels_out.shape != (len(x),)
+                or not labels_out.flags.c_contiguous
+                or not labels_out.flags.writeable
+            ):
+                raise ValueError(
+                    "labels_out must be a writable, contiguous int64 "
+                    "array with one entry per supplied row"
+                )
+            if np.may_share_memory(labels_out, np.asarray(source)):
+                raise ValueError("labels_out must not alias input rows")
+        return self._accumulate(x, labels_out=labels_out)
 
     def _accumulate(self, x, index=None, labels_out=None):
         # Indexed matrix training gathers only assignment chunks, never B*d.
