@@ -110,3 +110,16 @@ previously quantized-away information cannot be recovered.
 clustering defaults, propose an upstream performance claim, or merge a
 replacement without full training quality, input/query transport, native
 FP32 numerical, multi-backend, distributed and large-scale tests.
+
+## Fork CI repair (2026-11-11)
+
+The inherited Meta `Build` workflow in `jesusvilela/faiss` had a
+pre-job `startup_failure` because two reusable pip-publishing call paths
+requested `id-token: write` without the caller providing that permission.
+[CI repair PR #3](https://github.com/jesusvilela/faiss/pull/3) was merged
+**into this fork only**, preserving historical failure records. On the fork,
+`Build` now runs a clearly labeled **limited CPU smoke** (not upstream
+C++/GPU/wheel coverage) and the opt-in checks present in the PR checkout.
+The dedicated experimental research workflow remains the primary CI for this
+PR. Do not interpret a green fork `Build` check as validation of Meta's
+private runners, full native build matrix, or a production clustering change.
