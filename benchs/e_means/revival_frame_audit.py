@@ -49,6 +49,8 @@ def farthest_witness(points, labels, centroid, donor_id=0):
     c = np.asarray(centroid, dtype=np.float32)
     if points.ndim != 2 or points.shape[1] != c.size or labels.shape != (len(points),):
         raise ValueError("incompatible points, labels or centroid")
+    if not np.isfinite(points).all() or not np.isfinite(c).all():
+        raise ValueError("non-finite points or centroid")
     local = points[labels == donor_id]
     if len(local) == 0:
         return None, 0.0
@@ -56,6 +58,10 @@ def farthest_witness(points, labels, centroid, donor_id=0):
     norm2 = np.einsum("ij,ij->i", residual, residual)
     which = int(np.argmax(norm2))
     if norm2[which] <= 0.0:
+        return None, 0.0
+    # A tie is not a unique geometric witness.  The relative tolerance is
+    # intentional: near-ties may change winner after FP32 frame transforms.
+    if np.count_nonzero(np.isclose(norm2, norm2[which], rtol=1e-6, atol=0.0)) != 1:
         return None, 0.0
     return local[which].copy(), float(np.sqrt(norm2[which]))
 
@@ -71,7 +77,7 @@ def witness_split(centroids, witness, radius, epsilon=float(EPS)):
         raise ValueError("expected exactly two centroid rows")
     c = out[0].astype(np.float64)
     w = np.asarray(witness, dtype=np.float64)
-    if w.shape != c.shape or not np.isfinite(w).all():
+    if not np.isfinite(c).all() or w.shape != c.shape or not np.isfinite(w).all():
         raise ValueError("invalid witness")
     if not np.isfinite(radius) or radius <= 0 or not np.isfinite(epsilon) or epsilon <= 0:
         raise ValueError("invalid radius or epsilon")
@@ -82,6 +88,8 @@ def witness_split(centroids, witness, radius, epsilon=float(EPS)):
     delta = epsilon * min(1.0, radius / norm) * v
     out[0] = (c - delta).astype(np.float32)
     out[1] = (c + delta).astype(np.float32)
+    if not np.isfinite(out).all():
+        raise ValueError("split is not representable in FP32")
     return out
 
 
@@ -169,6 +177,23 @@ class FrameTests(unittest.TestCase):
         self.assertLessEqual(float(np.linalg.norm(out[0].astype(float) -
                                                    c[0].astype(float))), 2.2e-5)
 
+    def test_tied_farthest_witness_abstains(self):
+        c = np.zeros(3, dtype=np.float32)
+        x = np.array([[1., 0., 0.], [-1., 0., 0.]], dtype=np.float32)
+        self.assertEqual(farthest_witness(x, [0, 0], c), (None, 0.0))
+
+    def test_near_tied_witness_abstains(self):
+        c = np.zeros(3, dtype=np.float32)
+        x = np.array([[1., 0., 0.], [0., 1.0000001, 0.]], dtype=np.float32)
+        self.assertEqual(farthest_witness(x, [0, 0], c), (None, 0.0))
+
+    def test_non_finite_input_rejected(self):
+        c = np.zeros(3, dtype=np.float32)
+        with self.assertRaises(ValueError):
+            farthest_witness(np.array([[np.nan, 0., 0.]], dtype=np.float32), [0], c)
+        with self.assertRaises(ValueError):
+            witness_split(np.vstack([c, c]), np.array([np.nan, 0., 0.]), 1.0)
+
     def test_actual_faiss_parity_if_installed(self):
         c = np.array([[2., 3., 5.], [11., -4., 6.]], dtype=np.float32)
         try:
@@ -185,7 +210,7 @@ if __name__ == "__main__":
     parser.add_argument("--frames", type=int, default=64)
     args = parser.parse_args()
     if args.tests:
-        unittest.main(argv=[__file__], verbosity=2, exit=False)
+        unittest.main(argv=[__file__], verbosity=2)
     else:
         result = experiment(args.frames)
         if args.faiss:
