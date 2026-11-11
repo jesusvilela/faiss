@@ -74,3 +74,13 @@ centroids from `faiss.knn` on the seeded, well-separated example. It does
 
 No upstream performance claim follows from this experiment; do not merge
 into the production clustering path without those controls.
+
+## Post-hoc aggregate non-identifiability result
+
+The additional [exact counterexample](REVIVAL_AGGREGATE_OBSTRUCTION.md) shows
+that even equal counts, sums, and scalar squared-distance objectives can hide
+different **unique** farthest witness vectors. That result is **derived**,
+not a Stage-6 preregistered empirical success. It identifies an information
+boundary in the existing update statistics; additional per-batch directional
+information must be captured rather than inferred from aggregate counts/sums.
+The corresponding unit test is labeled exploratory, not independent proof.
