@@ -116,6 +116,30 @@ class Stage6Tests(unittest.TestCase):
         with self.assertRaises(ValueError):
             s.observe(np.array([[np.nan,0.,0.]], dtype=np.float32), [0], [10])
 
+    def test_posthoc_aggregate_obstruction(self):
+        # Exploratory finite counterexample, NOT a preregistered success test.
+        a = np.array([[2., 0.], [-1., 0.], [-1., 0.]], dtype=np.float32)
+        b = np.array([[0., 2.], [0., -1.], [0., -1.]], dtype=np.float32)
+        c = np.zeros((1, 2), dtype=np.float32)
+        self.assertEqual(len(a), len(b))
+        np.testing.assert_array_equal(a.sum(axis=0), b.sum(axis=0))
+        self.assertEqual(float(np.sum(a * a)), float(np.sum(b * b)))
+        sa, sb = FixedFrameWitness(c, 5), FixedFrameWitness(c, 5)
+        ids = np.arange(3, dtype=np.int64)
+        labels = np.zeros(3, dtype=np.int64)
+        sa.observe(a, labels, ids)
+        sb.observe(b, labels, ids)
+        wa = sa.witness(0)[0]
+        wb = sb.witness(0)[0]
+        np.testing.assert_array_equal(wa, [2., 0.])
+        np.testing.assert_array_equal(wb, [0., 2.])
+        self.assertFalse(np.array_equal(wa, wb))
+
+    def test_missing_ids_rejected(self):
+        s = FixedFrameWitness(self.centers, 5)
+        with self.assertRaises(ValueError):
+            s.observe(self.rows[:1], self.labels[:1], None)
+
     def test_optional_faiss_assignment_parity(self):
         try:
             import faiss
