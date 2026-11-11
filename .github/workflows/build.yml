@@ -1,3 +1,6 @@
+# TEMPORARY DIAGNOSTIC ONLY -- DO NOT MERGE THIS OVERRIDE.
+# Retains all upstream reusable calls but makes them all skipped, and launches
+# one lightweight GitHub-hosted canary to isolate the source of startup_failure.
 name: Build
 on:
   workflow_dispatch:
@@ -10,16 +13,23 @@ on:
     tags:
       - 'v*'
 jobs:
+  fork-bootstrap-canary:
+    name: Fork startup control
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print runner receipt
+        run: echo 'Build reached a GitHub-hosted runner in the diagnostic branch'
   build-pull-request:
+    if: ${{ false }}
     uses: ./.github/workflows/build-pull-request.yml
   build-release:
+    if: ${{ false }}
     uses: ./.github/workflows/build-release.yml
     secrets:
       ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_API_TOKEN }}
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
   build-pip:
+    if: ${{ false }}
     uses: ./.github/workflows/build-pip.yml
-    if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/v')
   build-pip-gpu:
+    if: ${{ false }}
     uses: ./.github/workflows/build-pip-gpu.yml
-    if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/v')
