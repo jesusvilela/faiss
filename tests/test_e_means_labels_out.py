@@ -33,7 +33,7 @@ def _model(threshold, capture=False):
 
 class TestCallerOwnedLabels(unittest.TestCase):
 
-    def test_labels_out_preserves_revival_enabled_and_disabled_trajectories(self):
+    def test_labels_out_preserves_revival_trajectories(self):
         x, initial = _sample()
         for threshold in (0., .1):
             with self.subTest(threshold=threshold):
@@ -123,6 +123,9 @@ class TestCallerOwnedLabels(unittest.TestCase):
         self.assertIsNone(stats["counts"])
         self.assertEqual(stats["labels"].shape, (0,))
         self.assertIs(stats["labels"].base, empty)
+        without_output = model.accumulate(x[:0])
+        self.assertEqual(without_output["n"], 3)
+        self.assertNotIn("labels", without_output)
 
     def test_capture_enabled_prefers_supplied_buffer_on_final_epoch(self):
         x = np.array([[0.], [2.], [10.], [12.]], dtype=np.float32)
