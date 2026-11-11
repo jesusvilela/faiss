@@ -5,7 +5,9 @@ on:
     paths:
       - "benchs/e_means/revival_frame_audit.py"
       - "benchs/e_means/revival_quality_control.py"
+      - "benchs/e_means/revival_centering_control.py"
       - "benchs/e_means/REVIVAL_COVARIANCE.md"
+      - "benchs/e_means/REVIVAL_CENTERING_PREREG.md"
       - "benchs/e_means/REVIVAL_QUALITY_PREREG.md"
       - ".github/workflows/e-means-revival-covariance.yml"
   push:
@@ -14,7 +16,9 @@ on:
     paths:
       - "benchs/e_means/revival_frame_audit.py"
       - "benchs/e_means/revival_quality_control.py"
+      - "benchs/e_means/revival_centering_control.py"
       - "benchs/e_means/REVIVAL_COVARIANCE.md"
+      - "benchs/e_means/REVIVAL_CENTERING_PREREG.md"
       - "benchs/e_means/REVIVAL_QUALITY_PREREG.md"
       - ".github/workflows/e-means-revival-covariance.yml"
   workflow_dispatch:
@@ -78,4 +82,22 @@ jobs:
         with:
           name: e-means-revival-quality-stage4
           path: stage4-results.json
+          retention-days: 30
+
+  centering-control:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install NumPy
+        run: python -m pip install numpy==2.3.5
+      - name: Run preregistered shared-frame control with Stage-4 consistency check
+        run: python benchs/e_means/revival_centering_control.py --output stage5-results.json
+      - name: Preserve all Stage-5 outcomes
+        uses: actions/upload-artifact@v4
+        with:
+          name: e-means-revival-centering-stage5
+          path: stage5-results.json
           retention-days: 30
