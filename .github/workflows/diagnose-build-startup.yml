@@ -1,0 +1,44 @@
+name: Diagnose inherited Build startup
+
+on:
+  push:
+    branches:
+      - ci/diagnose-build-startup
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/diagnose-build-startup.yml
+      - .github/workflows/build*.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-build-graph:
+    name: Actionlint and reusable workflow checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate reusable workflow files are present
+        run: |
+          set -eu
+          for file in build.yml build-pull-request.yml build-release.yml build-pip.yml build-pip-gpu.yml; do
+            test -s ".github/workflows/$file"
+            grep -Eq '^  workflow_call:' ".github/workflows/$file" || test "$file" = build.yml
+            echo "validated presence: $file"
+          done
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+      - name: Validate inherited workflows with pinned actionlint
+        run: |
+          set -eu
+          go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 -color \
+            .github/workflows/build.yml \
+            .github/workflows/build-pull-request.yml \
+            .github/workflows/build-release.yml \
+            .github/workflows/build-pip.yml \
+            .github/workflows/build-pip-gpu.yml
