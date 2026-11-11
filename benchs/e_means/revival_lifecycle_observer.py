@@ -257,4 +257,4 @@ if __name__ == "__main__":
     import json
     for threshold in (0.0, 0.1):
         result = run_pair(threshold)
-        print(json.dumps(result, indent=2, sort_keys=True))
+        print(json.dumps(result, sort_keys=True))
