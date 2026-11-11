@@ -46,6 +46,20 @@ jobs:
         run: python benchs/e_means/revival_lifecycle_test.py
       - name: Preserve full per-step evidence
         run: python benchs/e_means/revival_lifecycle_observer.py > stage7-lifecycle-evidence.jsonl
+      - name: Validate two machine-readable JSONL records
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          records = [json.loads(line) for line in Path("stage7-lifecycle-evidence.jsonl").read_text().splitlines()]
+          assert len(records) == 2, "Expected revival-off and revival-on records"
+          assert [r["revival_threshold"] for r in records] == [0.0, 0.1]
+          assert records[0]["default_revived_clusters"] == 0
+          assert records[1]["default_revived_clusters"] > 0
+          assert all(r["post_update_parity"] == "exact_all_checked_states" for r in records)
+          print("Stage-7 valid JSONL; source revivals in enabled control:",
+                records[1]["default_revived_clusters"])
+          PY
       - name: Upload bounded diagnostics
         uses: actions/upload-artifact@v4
         with:
