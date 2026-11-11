@@ -25,3 +25,17 @@ jobs:
       contents: read
       id-token: write
     uses: ./.github/workflows/build-pip.yml
+  build-pull-request:
+    if: ${{ false }}
+    uses: ./.github/workflows/build-pull-request.yml
+  build-release:
+    if: ${{ false }}
+    uses: ./.github/workflows/build-release.yml
+    secrets:
+      ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_API_TOKEN }}
+  build-pip-gpu:
+    if: ${{ false }}
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/build-pip-gpu.yml
