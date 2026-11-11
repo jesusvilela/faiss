@@ -399,11 +399,15 @@ class NumpyEmeans(_EmeansBase):
         n = len(x) if index is None else len(index)
         if n == 0 and self._pending_stats is not None:
             stats = dict(self._pending_stats)
-            if (
+            if labels_out is not None:
+                stats["labels"] = labels_out[:0]
+            elif (
                 self.capture_assignments
                 and self._epoch == len(self.recipe["epoch_rows"]) - 1
             ):
                 stats["labels"] = np.empty(0, dtype="int64")
+            else:
+                stats.pop("labels", None)
             return stats
         try:
             stats = self._accumulate_core(x, index, labels_out=labels_out)
