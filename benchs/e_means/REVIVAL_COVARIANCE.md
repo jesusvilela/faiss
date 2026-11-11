@@ -71,3 +71,42 @@ only; complete e-means training, BF16, FP8, Triton, CuTe, multi-GPU, and
 representative retrieval quality remain **NOT TESTED**. This is not an upstream
 bug claim. Review the applicability of rigid-frame symmetry to the intended
 embedding representation before proposing any change to the default rule.
+
+## Follow-on evidence ledger (2026-11-11)
+
+These experiments were preregistered and executed separately from the initial
+frame diagnostic. Keep both positive and negative outcomes:
+
+| Stage | Conditions | Outcome | Evidential scope |
+|---|---|---|---|
+| 4: raw FP32 revival quality | 10 seeds, isotropic/anisotropic, offsets 0/100/10000; 60 paired cases | **FAILED** frozen criteria: 20/60 witness abstentions, all at offset 10000; worse held-out MSE in that regime | Toy single revival + one Lloyd update, not full e-means |
+| 5: shared training-derived local frame | Same 60 cases, same source data already quantized to FP32 | **PASSED** declared representation criteria: offset-10000 witness abstentions 20/20 -> 0/20; max relative no-revival MSE change 0.01225%; no centered-regime median witness penalty > 1% | Coordinate-space control only; no backend or throughput claim |
+
+Stage 4: [preregistration](REVIVAL_QUALITY_PREREG.md) and
+[executable](revival_quality_control.py); [GitHub Actions run and per-seed artifact](https://github.com/jesusvilela/faiss/actions/runs/42974169814).
+
+Stage 5: [preregistration](REVIVAL_CENTERING_PREREG.md) and
+[executable](revival_centering_control.py); [GitHub Actions run and per-seed artifact](https://github.com/jesusvilela/faiss/actions/runs/42974434127).
+
+All four custom research CI jobs passed on Stage-5 commit
+`44dd7e3723d0418eb55fa42fd5b9f97ad24f0d8f`. The repository's unrelated
+`Build` workflow reported a startup failure: do not state that *all* CI was
+green. The FAISS NumPy source-parity residual is exactly 0 in the compiled-core
+job. The fork's normal default revival code has not been modified.
+
+### Finite-precision impossibility at unbounded coordinate offsets
+
+No nonzero bounded displacement smaller than half the local FP32 spacing is
+assured to produce distinct represented centroid coordinates. Because spacing
+increases with magnitude, a fixed observed-radius-relative epsilon cannot
+remain nontrivially representable under arbitrary translations when centroids
+are stored as absolute FP32 vectors. This is a representation constraint,
+not evidence that a geometric formula is invalid. An opt-in common local
+origin works on the tested range, but requires origin persistence and
+consistent query/database transformations; arbitrary translations or
+previously quantized-away information cannot be recovered.
+
+**Project decision:** keep the candidate experimental; do not change FAISS
+clustering defaults, propose an upstream performance claim, or merge a
+replacement without full training quality, input/query transport, native
+FP32 numerical, multi-backend, distributed and large-scale tests.
