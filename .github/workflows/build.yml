@@ -19,6 +19,6 @@ jobs:
     steps:
       - name: Print runner receipt
         run: echo 'Build reached a GitHub-hosted runner in the diagnostic branch'
-  build-pull-request:
+  build-pip:
     if: ${{ false }}
-    uses: ./.github/workflows/build-pull-request.yml
+    uses: ./.github/workflows/build-pip.yml
