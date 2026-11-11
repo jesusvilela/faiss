@@ -1,4 +1,9 @@
+# Fork-aware Build routing.
+# In non-Meta forks, private runners, release secrets and publishing
+# permissions are not assumed to exist. The fork job is deliberately a
+# LIMITED CPU smoke test, not upstream C++/GPU/release coverage.
 name: Build
+
 on:
   workflow_dispatch:
   pull_request:
@@ -9,17 +14,68 @@ on:
       - main
     tags:
       - 'v*'
+
 jobs:
+  fork-cpu-smoke:
+    if: github.repository != 'facebookresearch/faiss'
+    name: Fork CPU smoke (not full upstream build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install compiled FAISS CPU and NumPy
+        run: python -m pip install numpy==2.3.5 faiss-cpu==1.15.1
+      - name: Run compiled CPU nearest-neighbor smoke
+        run: |
+          python - <<'PY'
+          import faiss
+          import numpy as np
+          data = np.array([[0, 0, 0], [2, 0, 0], [0, 3, 0]], dtype=np.float32)
+          index = faiss.IndexFlatL2(3)
+          index.add(data)
+          dist, ids = index.search(data, 1)
+          np.testing.assert_array_equal(ids.ravel(), [0, 1, 2])
+          np.testing.assert_array_equal(dist.ravel(), 0)
+          print("LIMITED fork CPU smoke passed; upstream C++/GPU not tested")
+          PY
+      - name: Run opt-in fork research regressions when present
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f benchs/e_means/revival_frame_audit.py ]]; then
+            python benchs/e_means/revival_frame_audit.py --tests
+          fi
+          if [[ -f benchs/e_means/revival_stream_test.py ]]; then
+            python benchs/e_means/revival_stream_test.py
+          fi
+
   build-pull-request:
+    if: github.repository == 'facebookresearch/faiss'
     uses: ./.github/workflows/build-pull-request.yml
+
   build-release:
+    if: github.repository == 'facebookresearch/faiss' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     uses: ./.github/workflows/build-release.yml
     secrets:
       ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_API_TOKEN }}
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+
   build-pip:
+    if: github.repository == 'facebookresearch/faiss' && (github.event_name != 'push' || startsWith(github.ref, 'refs/tags/v'))
+    permissions:
+      contents: read
+      pull-requests: read
+      id-token: write
     uses: ./.github/workflows/build-pip.yml
-    if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/v')
+
   build-pip-gpu:
+    if: github.repository == 'facebookresearch/faiss' && (github.event_name != 'push' || startsWith(github.ref, 'refs/tags/v'))
+    permissions:
+      contents: read
+      pull-requests: read
+      id-token: write
     uses: ./.github/workflows/build-pip-gpu.yml
-    if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/v')

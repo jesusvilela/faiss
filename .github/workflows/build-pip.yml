@@ -12,6 +12,9 @@ on:
 jobs:
   changes:
     name: Detect CPU-relevant changes
+    permissions:
+      contents: read
+      pull-requests: read
     runs-on: ubuntu-latest
     outputs:
       has_cpu_changes: ${{ steps.filter.outputs.cpu }}
@@ -32,6 +35,8 @@ jobs:
 
   build-wheels:
     name: Build wheels on ${{ matrix.os }}
+    permissions:
+      contents: read
     needs: changes
     if: ${{ needs.changes.outputs.has_cpu_changes == 'true' || github.event_name != 'pull_request' }}
     runs-on: ${{ matrix.os }}

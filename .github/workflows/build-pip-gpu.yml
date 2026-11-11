@@ -18,6 +18,9 @@ concurrency:
 jobs:
   changes:
     name: Detect GPU-relevant changes
+    permissions:
+      contents: read
+      pull-requests: read
     runs-on: ubuntu-latest
     outputs:
       has_gpu_changes: ${{ steps.filter.outputs.gpu }}
@@ -46,6 +49,8 @@ jobs:
 
   build-faiss-gpu:
     name: Build & test faiss-gpu
+    permissions:
+      contents: read
     needs: changes
     if: ${{ needs.changes.outputs.has_gpu_changes == 'true' || github.event_name != 'pull_request' }}
     runs-on: 4-core-ubuntu-gpu-t4
@@ -128,6 +133,8 @@ jobs:
 
   build-faiss-gpu-cuvs:
     name: Build & test faiss-gpu-cuvs
+    permissions:
+      contents: read
     needs: changes
     if: ${{ needs.changes.outputs.has_gpu_changes == 'true' || github.event_name != 'pull_request' }}
     runs-on: 4-core-ubuntu-gpu-t4
