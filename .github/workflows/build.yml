@@ -22,6 +22,3 @@ jobs:
   build-pull-request:
     if: ${{ false }}
     uses: ./.github/workflows/build-pull-request.yml
-  build-pip:
-    if: ${{ false }}
-    uses: ./.github/workflows/build-pip.yml
