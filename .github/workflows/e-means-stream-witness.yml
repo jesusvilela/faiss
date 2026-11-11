@@ -1,0 +1,52 @@
+name: E-means streaming witness experiment
+
+on:
+  push:
+    branches:
+      - "research/e-means-stream-witness"
+    paths:
+      - "benchs/e_means/revival_stream_witness.py"
+      - "benchs/e_means/revival_stream_test.py"
+      - "benchs/e_means/REVIVAL_STREAM_PREREG.md"
+      - "benchs/e_means/REVIVAL_STREAM_DESIGN.md"
+      - ".github/workflows/e-means-stream-witness.yml"
+  pull_request:
+    paths:
+      - "benchs/e_means/revival_stream_witness.py"
+      - "benchs/e_means/revival_stream_test.py"
+      - "benchs/e_means/REVIVAL_STREAM_PREREG.md"
+      - "benchs/e_means/REVIVAL_STREAM_DESIGN.md"
+      - ".github/workflows/e-means-stream-witness.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  streaming-geometry:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install pinned NumPy
+        run: python -m pip install numpy==2.3.5
+      - name: Run exact-branch source tests
+        run: python benchs/e_means/revival_stream_test.py
+      - name: Record fixed-memory and covariance metrics
+        run: python benchs/e_means/revival_stream_witness.py
+
+  faiss-assignment-control:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install FAISS compiled core
+        run: python -m pip install numpy==2.3.5 faiss-cpu==1.15.1
+      - name: Run all tests including FAISS assignment parity
+        run: python benchs/e_means/revival_stream_test.py
+      - name: Require actual compiled FAISS nearest-centroid parity
+        run: python benchs/e_means/revival_stream_witness.py --faiss
