@@ -9,6 +9,7 @@ on:
       - "benchs/e_means/revival_stream_test.py"
       - "benchs/e_means/REVIVAL_STREAM_PREREG.md"
       - "benchs/e_means/REVIVAL_STREAM_DESIGN.md"
+      - "benchs/e_means/REVIVAL_AGGREGATE_OBSTRUCTION.md"
       - ".github/workflows/e-means-stream-witness.yml"
   pull_request:
     paths:
@@ -16,6 +17,7 @@ on:
       - "benchs/e_means/revival_stream_test.py"
       - "benchs/e_means/REVIVAL_STREAM_PREREG.md"
       - "benchs/e_means/REVIVAL_STREAM_DESIGN.md"
+      - "benchs/e_means/REVIVAL_AGGREGATE_OBSTRUCTION.md"
       - ".github/workflows/e-means-stream-witness.yml"
   workflow_dispatch:
 
