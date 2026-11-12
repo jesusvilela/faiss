@@ -1,0 +1,43 @@
+name: Review upstream-clean e-means labels
+
+on:
+  pull_request:
+    branches:
+      - contribute/e-means-caller-labels-clean
+    paths:
+      - ".github/workflows/e-means-labels-review.yml"
+  push:
+    branches:
+      - ci/e-means-labels-review-20261112
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Upstream-base full NumPy regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install pinned FAISS and NumPy
+        run: python -m pip install numpy==2.3.5 faiss-cpu==1.15.1
+      - name: Overlay checked-out e-means Python sources
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import shutil
+          import faiss
+          installed = Path(faiss.__file__).resolve().parent / "contrib" / "e_means"
+          shutil.copytree("contrib/e_means", installed, dirs_exist_ok=True)
+          PY
+      - name: Check syntax of changed Python files
+        run: python -m py_compile contrib/e_means/e_means.py tests/test_e_means_labels_out.py
+      - name: New API regression tests
+        run: python -m unittest discover -s tests -p test_e_means_labels_out.py -v
+      - name: Entire existing NumPy e-means regression suite
+        run: python -m unittest discover -s tests -p test_e_means.py -v
