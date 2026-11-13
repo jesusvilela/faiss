@@ -4,6 +4,13 @@ on:
   push:
     branches:
       - audit/e-means-labels-alias-20261113
+  pull_request:
+    branches:
+      - contribute/e-means-caller-labels-clean
+    paths:
+      - ".github/workflows/e-means-alias-audit.yml"
+      - "tests/test_e_means_labels_out.py"
+      - "contrib/e_means/e_means.py"
   workflow_dispatch:
 
 permissions:
