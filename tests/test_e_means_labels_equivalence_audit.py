@@ -94,13 +94,12 @@ def _run_one(seed, d, k, spherical, capture, partition):
                 raise AssertionError("post-update state diverged")
         original.end_epoch()
         instrumented.end_epoch()
-        if original.iteration_stats != instrumented.iteration_stats:
-            # Epoch wall-clock 'time' is not deterministic; restrict to
-            # objective, imbalance and revival counts.
-            for key in ("obj", "imb", "nsplit"):
-                if (original.iteration_stats[-1].get(key) !=
-                        instrumented.iteration_stats[-1].get(key)):
-                    raise AssertionError("epoch statistic diverged: " + key)
+        # Epoch wall-clock 'time' is not deterministic; compare only
+        # the algorithmic objective, imbalance and revival counts.
+        for key in ("obj", "imbalance_factor", "nsplit"):
+            if (original.iteration_stats[-1][key] !=
+                    instrumented.iteration_stats[-1][key]):
+                raise AssertionError("epoch statistic diverged: " + key)
     np.testing.assert_array_equal(original.finalize(), instrumented.finalize())
     np.testing.assert_array_equal(original.obj, instrumented.obj)
     if complete_labels_seen != 48:
