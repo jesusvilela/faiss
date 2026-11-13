@@ -1,0 +1,36 @@
+name: E-means labels alias audit
+
+on:
+  push:
+    branches:
+      - audit/e-means-labels-alias-20261113
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  numpy-audit:
+    name: Test buffer disjointness and existing NumPy paths
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install pinned NumPy and FAISS core
+        run: python -m pip install numpy==2.3.5 faiss-cpu==1.15.1
+      - name: Overlay exact branch Python sources
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import shutil
+          import faiss
+          dest = Path(faiss.__file__).resolve().parent / "contrib" / "e_means"
+          shutil.copytree("contrib/e_means", dest, dirs_exist_ok=True)
+          PY
+      - name: Run all new tests
+        run: python -m unittest discover -s tests -p test_e_means_labels_out.py -v
+      - name: Run all existing tests
+        run: python -m unittest discover -s tests -p test_e_means.py -v
