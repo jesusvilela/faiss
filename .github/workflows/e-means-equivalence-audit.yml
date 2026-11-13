@@ -1,0 +1,44 @@
+name: E-means matched-control equivalence audit
+
+on:
+  pull_request:
+    branches:
+      - contribute/e-means-caller-labels-clean
+    paths:
+      - "tests/test_e_means_labels_equivalence_audit.py"
+      - ".github/workflows/e-means-equivalence-audit.yml"
+  push:
+    branches:
+      - audit/e-means-labels-equivalence-20261113
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cpu-equivalence:
+    name: CPU NumPy matched-control equivalence
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install pinned numerical dependencies
+        run: python -m pip install numpy==2.3.5 faiss-cpu==1.15.1
+      - name: Use checked-out FAISS e-means sources
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import shutil
+          import faiss
+          target = Path(faiss.__file__).resolve().parent / "contrib" / "e_means"
+          shutil.copytree("contrib/e_means", target, dirs_exist_ok=True)
+          PY
+      - name: Run matched-control metamorphic matrix
+        run: python -m unittest discover -s tests -p test_e_means_labels_equivalence_audit.py -v
+      - name: Run new API regression tests
+        run: python -m unittest discover -s tests -p test_e_means_labels_out.py -v
+      - name: Run existing NumPy e-means tests
+        run: python -m unittest discover -s tests -p test_e_means.py -v
